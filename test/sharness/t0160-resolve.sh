@@ -14,13 +14,17 @@ test_expect_success "resolve: prepare files" '
 	c_hash=$(ipfs add -q -r a/b/c | tail -n1)
 '
 
-test_expect_success "resolve: prepare name" '
-	id_hash=$(ipfs id -f="<id>") &&
-	ipfs name publish "$a_hash" &&
-	printf "/ipfs/$a_hash" >expected_nameval &&
-	ipfs name resolve >actual_nameval &&
-	test_cmp expected_nameval actual_nameval
-'
+test_resolve_setup_name() {
+	ref=$1
+
+	test_expect_success "resolve: prepare name" "
+		id_hash=$(ipfs id -f='<id>') &&
+		ipfs name publish '$1' &&
+		printf '$1' >expected_nameval &&
+		ipfs name resolve >actual_nameval &&
+		test_cmp expected_nameval actual_nameval
+	"
+}
 
 test_resolve() {
 	src=$1
@@ -42,10 +46,19 @@ test_resolve_cmd() {
 	test_resolve "/ipfs/$a_hash" "/ipfs/$a_hash"
 	test_resolve "/ipfs/$a_hash/b" "/ipfs/$b_hash"
 	test_resolve "/ipfs/$a_hash/b/c" "/ipfs/$c_hash"
+	test_resolve "/ipfs/$b_hash/c" "/ipfs/$c_hash"
 
+	test_resolve_setup_name "/ipfs/$a_hash"
 	test_resolve "/ipns/$id_hash" "/ipfs/$a_hash"
 	test_resolve "/ipns/$id_hash/b" "/ipfs/$b_hash"
 	test_resolve "/ipns/$id_hash/b/c" "/ipfs/$c_hash"
+
+	test_resolve_setup_name "/ipfs/$b_hash"
+	test_resolve "/ipns/$id_hash" "/ipfs/$b_hash"
+	test_resolve "/ipns/$id_hash/c" "/ipfs/$c_hash"
+
+	test_resolve_setup_name "/ipfs/$c_hash"
+	test_resolve "/ipns/$id_hash" "/ipfs/$c_hash"
 }
 
 # should work offline
