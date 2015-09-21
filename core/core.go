@@ -51,6 +51,7 @@ import (
 	ipnsfs "github.com/ipfs/go-ipfs/ipnsfs"
 	merkledag "github.com/ipfs/go-ipfs/merkledag"
 	namesys "github.com/ipfs/go-ipfs/namesys"
+	ipnsrp "github.com/ipfs/go-ipfs/namesys/republisher"
 	path "github.com/ipfs/go-ipfs/path"
 	pin "github.com/ipfs/go-ipfs/pin"
 	repo "github.com/ipfs/go-ipfs/repo"
@@ -104,6 +105,7 @@ type IpfsNode struct {
 	Diagnostics  *diag.Diagnostics   // the diagnostics service
 	Ping         *ping.PingService
 	Reprovider   *rp.Reprovider // the value reprovider system
+	IpnsRepub    *ipnsrp.Republisher
 
 	IpnsFs *ipnsfs.Filesystem
 
@@ -225,6 +227,12 @@ func (n *IpfsNode) startOnlineServicesWithHost(ctx context.Context, host p2phost
 
 	// setup name system
 	n.Namesys = namesys.NewNameSystem(n.Routing)
+
+	// setup ipns republishing
+	n.IpnsRepub = ipnsrp.NewRepublisher(n.Routing, n.Peerstore)
+	n.IpnsRepub.AddName(n.Identity)
+
+	n.Process().Go(n.IpnsRepub.Run)
 
 	return nil
 }
